@@ -13,7 +13,7 @@ RSS_FEED = {'bbc': 'http://feeds.bbci.co.uk/news/rss.xml',
 class ArticleParser(object):
     """
     Takes an RSS address and returns articles
-    """
+    """ 
     def __init__(self, rss):
         self.rss = rss
         self.feed = None # Lazy load the feed when needed

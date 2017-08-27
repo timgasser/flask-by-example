@@ -47,22 +47,10 @@ class ArticleParser(object):
                 article.get("summary"))
 
 @app.route("/")
-@app.route("/bbc")
-def get_bbc_news():
-    # parser = ArticleParser('bbc')
-    article_sections = ArticleParser('bbc').get_article_sections(0)
-    return ARTICLE_TEMPLATE.format(*article_sections)
-
-@app.route("/fox")
-def get_fox_news():
-    # parser = ArticleParser('fox')
-    article_sections = ArticleParser('fox').get_article_sections(0)
-    return ARTICLE_TEMPLATE.format(*article_sections)
-
-@app.route("/cnn")
-def get_cnn_news():
-    # parser = ArticleParser('cnn')
-    article_sections = ArticleParser('cnn').get_article_sections(0)
+@app.route("/<publication>")
+def get_news(publication='bbc'):
+    assert publication in RSS_FEED, "Can't find {} in {}".format(publication, RSS_FEED.keys()) 
+    article_sections = ArticleParser(publication).get_article_sections(0)
     return ARTICLE_TEMPLATE.format(*article_sections)
 
 if __name__ == '__main__':

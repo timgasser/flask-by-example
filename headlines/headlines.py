@@ -2,6 +2,7 @@
 
 import feedparser
 from flask import Flask
+from flask import render_template
 
 app = Flask(__name__)
 
@@ -9,14 +10,14 @@ RSS_FEED = {'bbc': 'http://feeds.bbci.co.uk/news/rss.xml',
             'cnn': 'http://rss.cnn.com/rss/edition.rss',
             'fox': 'http://feeds.foxnews.com/foxnews/latest'}
 
-ARTICLE_TEMPLATE = """<html>
-        <body>
-            <h1>Headlines </h1>
-            <b>{0}</b> <br/>
-            <i>{1}</i> <br/>
-            <p>{2}</p> <br/>
-        </body>
-    </html>"""
+# ARTICLE_TEMPLATE = """<html>
+#         <body>
+#             <h1>Headlines </h1>
+#             <b>{0}</b> <br/>
+#             <i>{1}</i> <br/>
+#             <p>{2}</p> <br/>
+#         </body>
+#     </html>"""
 
 class ArticleParser(object):
     """
@@ -50,8 +51,9 @@ class ArticleParser(object):
 @app.route("/<publication>")
 def get_news(publication='bbc'):
     assert publication in RSS_FEED, "Can't find {} in {}".format(publication, RSS_FEED.keys()) 
-    article_sections = ArticleParser(publication).get_article_sections(0)
-    return ARTICLE_TEMPLATE.format(*article_sections)
+    article_sections = ArticleParser(publication).get_article(0)
+    # return ARTICLE_TEMPLATE.format(*article_sections)
+    return render_template("home.html", article=article_sections)
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

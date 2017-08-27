@@ -10,15 +10,6 @@ RSS_FEED = {'bbc': 'http://feeds.bbci.co.uk/news/rss.xml',
             'cnn': 'http://rss.cnn.com/rss/edition.rss',
             'fox': 'http://feeds.foxnews.com/foxnews/latest'}
 
-# ARTICLE_TEMPLATE = """<html>
-#         <body>
-#             <h1>Headlines </h1>
-#             <b>{0}</b> <br/>
-#             <i>{1}</i> <br/>
-#             <p>{2}</p> <br/>
-#         </body>
-#     </html>"""
-
 class ArticleParser(object):
     """
     Takes an RSS address and returns articles
@@ -27,13 +18,22 @@ class ArticleParser(object):
         self.rss = rss
         self.feed = None # Lazy load the feed when needed
 
+    def lazy_feed(self):
+        if self.feed is None:
+            self.feed = feedparser.parse(RSS_FEED[self.rss])
+
+    def articles(self):
+        """
+        Returns a list of all articles
+        """
+        self.lazy_feed()
+        return self.feed['entries']
+
     def get_article(self, index):
         """
         Returns an article at the given index
         """
-        if self.feed is None:
-            self.feed = feedparser.parse(RSS_FEED[self.rss])
-
+        self.lazy_feed()
         entry_count = len(self.feed['entries'])
         assert index < entry_count, 'Article {} of {} not available'.format(index, entry_count)
         return self.feed['entries'][index]
@@ -51,9 +51,9 @@ class ArticleParser(object):
 @app.route("/<publication>")
 def get_news(publication='bbc'):
     assert publication in RSS_FEED, "Can't find {} in {}".format(publication, RSS_FEED.keys()) 
-    article_sections = ArticleParser(publication).get_article(0)
+    articles = ArticleParser(publication).articles()
     # return ARTICLE_TEMPLATE.format(*article_sections)
-    return render_template("home.html", article=article_sections)
+    return render_template("home.html", articles=articles)
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

@@ -3,6 +3,7 @@
 import feedparser
 from flask import Flask
 from flask import render_template
+from flask import request
 
 app = Flask(__name__)
 
@@ -48,9 +49,13 @@ class ArticleParser(object):
                 article.get("summary"))
 
 @app.route("/")
-@app.route("/<publication>")
-def get_news(publication='bbc'):
-    assert publication in RSS_FEED, "Can't find {} in {}".format(publication, RSS_FEED.keys()) 
+def get_news():
+    query = request.args.get("publication")
+    if not query or query.lower() not in RSS_FEED:
+        publication = "bbc"
+    else:
+        publication = query.lower()
+    
     articles = ArticleParser(publication).articles()
     # return ARTICLE_TEMPLATE.format(*article_sections)
     return render_template("home.html", articles=articles)

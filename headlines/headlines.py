@@ -5,11 +5,19 @@ from flask import Flask
 from flask import render_template
 from flask import request
 
+import json
+# import urllib3
+import urllib.parse
+import urllib.request
+
 app = Flask(__name__)
 
 RSS_FEED = {'bbc': 'http://feeds.bbci.co.uk/news/rss.xml',
             'cnn': 'http://rss.cnn.com/rss/edition.rss',
             'fox': 'http://feeds.foxnews.com/foxnews/latest'}
+
+DEFAULTS = {'publication': 'bbc',
+            'city': 'London, UK'}
 
 class ArticleParser(object):
     """
@@ -51,14 +59,34 @@ class ArticleParser(object):
 @app.route("/")
 def get_news():
     query = request.args.get("publication")
-    if not query or query.lower() not in RSS_FEED:
+    weather_city = request.args.get("city")
+
+    if query is None or query.lower() not in RSS_FEED:
         publication = "bbc"
     else:
         publication = query.lower()
     
+    if weather_city is None:
+        weather_city = "Seattle,USA"
+
     articles = ArticleParser(publication).articles()
+    weather = get_weather(weather_city)
     # return ARTICLE_TEMPLATE.format(*article_sections)
-    return render_template("home.html", articles=articles)
+    return render_template("home.html", articles=articles, weather=weather)
+
+def get_weather(query):
+    api_url= "http://api.openweathermap.org/data/2.5/weather?q={}&units=imperial&appid=8579abcf4e30ce45e4e58d1d9f30acfd"
+    query = urllib.parse.quote(query)
+    url = api_url.format(query)
+    data = urllib.request.urlopen(url).read()
+    parsed = json.loads(data)
+    print('Parsed:\n{}'.format(parsed))
+    weather = None
+    if parsed.get("weather"):
+        weather = {"description": parsed["weather"][0]["description"],
+                   "temperature": parsed["main"]["temp"],
+                   "city": parsed["name"]}
+    return weather
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

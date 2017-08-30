@@ -17,7 +17,12 @@ RSS_FEED = {'bbc': 'http://feeds.bbci.co.uk/news/rss.xml',
             'fox': 'http://feeds.foxnews.com/foxnews/latest'}
 
 DEFAULTS = {'publication': 'bbc',
-            'city': 'London, UK'}
+            'city': 'London, UK',
+            'currency_from': 'GBP',
+            'currency_to': 'USD'}
+
+URLS = {'weather': "http://api.openweathermap.org/data/2.5/weather?q={}&units=imperial&appid=8579abcf4e30ce45e4e58d1d9f30acfd",
+        'currency': "https://openexchangerates.org//api/latest.json?app_id=d769de3fba994e0b8147cc01b5aaa542"}
 
 class ArticleParser(object):
     """
@@ -57,36 +62,64 @@ class ArticleParser(object):
                 article.get("summary"))
 
 @app.route("/")
-def get_news():
+def home():
+    # Publication options
     query = request.args.get("publication")
-    weather_city = request.args.get("city")
-
     if query is None or query.lower() not in RSS_FEED:
-        publication = "bbc"
+        publication = DEFAULTS['publication']
     else:
         publication = query.lower()
-    
-    if weather_city is None:
-        weather_city = "Seattle,USA"
-
     articles = ArticleParser(publication).articles()
+
+    # Weather options    
+    weather_city = request.args.get("city")    
+    if weather_city is None:
+        weather_city = DEFAULTS['city']
     weather = get_weather(weather_city)
+
+    # Currency options
+    currency_from = request.args.get("currency_from")
+    if currency_from is None:
+        currency_from = DEFAULTS['currency_from']
+    
+    currency_to = request.args.get("currency_to")
+    if currency_to is None:
+        currency_to = DEFAULTS['currency_to']
+
+    rate, currencies = get_currency(currency_from, currency_to)
+
     # return ARTICLE_TEMPLATE.format(*article_sections)
-    return render_template("home.html", articles=articles, weather=weather)
+    return render_template("home.html",
+                           articles=articles,
+                           weather=weather,
+                           currencies=currencies,
+                           currency_from=currency_from,
+                           currency_to=currency_to,
+                           rate=round(rate, 2))
 
 def get_weather(query):
-    api_url= "http://api.openweathermap.org/data/2.5/weather?q={}&units=imperial&appid=8579abcf4e30ce45e4e58d1d9f30acfd"
+    api_url = URLS['weather']
     query = urllib.parse.quote(query)
     url = api_url.format(query)
     data = urllib.request.urlopen(url).read()
     parsed = json.loads(data)
-    print('Parsed:\n{}'.format(parsed))
+    # print('Parsed:\n{}'.format(parsed))
     weather = None
     if parsed.get("weather"):
         weather = {"description": parsed["weather"][0]["description"],
                    "temperature": parsed["main"]["temp"],
-                   "city": parsed["name"]}
+                   "city": parsed["name"],
+                   'country': parsed['sys']['country']}
     return weather
+
+def get_currency(frm, to):
+    currency_data = urllib.request.urlopen(URLS['currency']).read()
+
+    parsed = json.loads(currency_data).get('rates')
+    frm_rate = parsed.get(frm.upper())
+    to_rate = parsed.get(to.upper())
+    return (to_rate / frm_rate, parsed.keys())
+
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

@@ -4,11 +4,14 @@ import feedparser
 from flask import Flask
 from flask import render_template
 from flask import request
+from flask import make_response
 
 import json
 # import urllib3
 import urllib.parse
 import urllib.request
+
+import datetime
 
 app = Flask(__name__)
 
@@ -61,41 +64,52 @@ class ArticleParser(object):
                 article.get("published"),
                 article.get("summary"))
 
+def headline_args(arg, default, lowercase=False):
+    """
+    Checks to see if `arg` is in `default_args`, if not it checks cookies
+    and then finally assigns to a default value
+    """
+    html_arg = request.args.get(arg)
+    if html_arg is not None:
+        return html_arg.lower() if lowercase else html_arg
+    
+    cookie_arg = request.cookies.get(arg)
+    if cookie_arg is not None:
+        return cookie_arg.lower() if lowercase else cookie_arg
+
+    return default if lowercase else default.lower()
+
+
+
 @app.route("/")
 def home():
     # Publication options
-    query = request.args.get("publication")
-    if query is None or query.lower() not in RSS_FEED:
-        publication = DEFAULTS['publication']
-    else:
-        publication = query.lower()
+    publication = headline_args("publication", DEFAULTS['publication'], lowercase=True)
     articles = ArticleParser(publication).articles()
 
     # Weather options    
-    weather_city = request.args.get("city")    
-    if weather_city is None:
-        weather_city = DEFAULTS['city']
-    weather = get_weather(weather_city)
+    city = headline_args("city", DEFAULTS["city"])
+    weather = get_weather(city)
 
     # Currency options
-    currency_from = request.args.get("currency_from")
-    if currency_from is None:
-        currency_from = DEFAULTS['currency_from']
-    
-    currency_to = request.args.get("currency_to")
-    if currency_to is None:
-        currency_to = DEFAULTS['currency_to']
-
+    currency_from = headline_args("currency_from", DEFAULTS['currency_from'])
+    currency_to = headline_args("currency_to", DEFAULTS['currency_to'])
     rate, currencies = get_currency(currency_from, currency_to)
 
-    # return ARTICLE_TEMPLATE.format(*article_sections)
-    return render_template("home.html",
-                           articles=articles,
-                           weather=weather,
-                           currencies=currencies,
-                           currency_from=currency_from,
-                           currency_to=currency_to,
-                           rate=round(rate, 2))
+    response = make_response(render_template("home.html",
+                             articles=articles,
+                             weather=weather,
+                             currencies=currencies,
+                             currency_from=currency_from,
+                             currency_to=currency_to,
+                             rate=round(rate, 2)))
+
+    expires = datetime.datetime.now() + datetime.timedelta(days=365)
+    response.set_cookie("publication", publication, expires=expires)
+    response.set_cookie("city", city, expires=expires)
+    response.set_cookie("currency_from", currency_from, expires=expires)
+    response.set_cookie("currency_to", currency_to, expires=expires)
+    return response
 
 def get_weather(query):
     api_url = URLS['weather']
@@ -118,7 +132,7 @@ def get_currency(frm, to):
     parsed = json.loads(currency_data).get('rates')
     frm_rate = parsed.get(frm.upper())
     to_rate = parsed.get(to.upper())
-    return (to_rate / frm_rate, parsed.keys())
+    return (to_rate / frm_rate, sorted(parsed.keys()))
 
 
 if __name__ == '__main__':

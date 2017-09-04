@@ -25,12 +25,14 @@ input[type="submit"]:hover {
 }
 
 #map-canvas {
+    padding 10px 10px 10px 10px;
     width: 70%;
     height: 500px;
     float: left;
 }
 
 #newcrimeform {
+    padding 10px 10px 10px 10px;    
     float: right;
     width: 25%;
 }

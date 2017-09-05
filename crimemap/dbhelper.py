@@ -60,3 +60,28 @@ class DBHelper(object):
         finally:
             connection.close()
 
+    def get_all_crimes(self):
+        connection = self.connect()
+        crimes = list()
+
+        try:
+            query = """
+            SELECT latitude, longitude, date, category, description
+            FROM crimes;
+            """
+            with connection.cursor() as cursor:
+                all_crimes = cursor.execute(query)
+            for crime in all_crimes:
+                crime_dict = {'latitude': crime[0], 
+                              'longitude': crime[1], 
+                              'date': crime[2], 
+                              'category': crime[3], 
+                              'description': crime[4]}
+                crimes.append(crime_dict)
+            return crimes
+
+        except Exception as e:
+            print(e)
+        finally:
+            connection.close()
+

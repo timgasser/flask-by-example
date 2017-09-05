@@ -20,7 +20,6 @@ else:
 def home():
     crimes = DB.get_all_crimes()
     crimes = json.dumps(crimes)
-    print('home: crimes = {}'.format(crimes))
     return render_template("home.html", crimes=crimes)
     # try:
     #     data = DB.get_all_inputs()

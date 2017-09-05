@@ -1,6 +1,8 @@
 import pymysql
 import dbconfig
 
+import datetime
+
 class DBHelper(object):
 
     def connect(self, database="crimemap"):
@@ -70,11 +72,12 @@ class DBHelper(object):
             FROM crimes;
             """
             with connection.cursor() as cursor:
-                all_crimes = cursor.execute(query)
-            for crime in all_crimes:
+                cursor.execute(query)
+
+            for crime in cursor:
                 crime_dict = {'latitude': crime[0], 
                               'longitude': crime[1], 
-                              'date': crime[2], 
+                              'date': datetime.datetime.strftime(crime[2], '%Y-%m-%d'), 
                               'category': crime[3], 
                               'description': crime[4]}
                 crimes.append(crime_dict)

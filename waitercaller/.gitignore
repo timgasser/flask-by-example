@@ -1,0 +1,4 @@
+dbconfig.py
+*.pyc
+*.DS_Store
+*~

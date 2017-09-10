@@ -1,4 +1,4 @@
-dbconfig.py
+config.py
 *.pyc
 *.DS_Store
 *~

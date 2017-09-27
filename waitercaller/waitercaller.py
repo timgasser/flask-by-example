@@ -20,6 +20,8 @@ from bitlyhelper import BitlyHelper
 
 import datetime
 
+from forms import RegistrationForm
+
 DB = DBHelper()
 PH = PasswordHelper()
 BH = BitlyHelper()
@@ -30,21 +32,22 @@ login_manager = LoginManager(app)
 
 @app.route("/")
 def home():
-    return render_template("home.html")
+    registrationform = RegistrationForm()
+    return render_template("home.html", registrationform=registrationform)
 
 @app.route("/register", methods=["POST"])
 def register():
-    email = request.form.get('email')
-    password = request.form.get('password')
-    password2 = request.form.get('password2')
-    if password != password2:
+    form = RegistrationForm(request.form)
+    if form.validate():
+        if DB.get_user(form.email.data):
+            form.email.errors.append("Email address already registered")
+            return render_template('home.html', registrationform=form)
+        
+        salt = PH.get_salt()
+        hashed = PH.get_hash(form.password2.data + salt)
+        DB.add_user(form.email.data, salt, hashed)
         return redirect(url_for('home'))
-    if DB.get_user(email):
-        return redirect(url_for('home'))
-    salt = PH.get_salt()
-    hashed = PH.get_hash(password + salt)
-    DB.add_user(email, salt, hashed)
-    return redirect(url_for('home'))
+    return render_template('home.html', registrationform=form)
 
 @app.route("/login", methods=["POST"])
 def login():

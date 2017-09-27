@@ -1,3 +1,5 @@
+import datetime
+
 # Dictionary to store the mock users.
 # Use the email as the key to give constant time checking
 MOCK_USERS = {'test@example.com':  {'salt': "8Fb23mMNHD5Zb8pr2qWA3PE9bH0=",
@@ -8,6 +10,11 @@ MOCK_TABLES = [{"_id": "1",
                 "number": "1",
                 "owner": "test@example.com",
                 "url": "mockurl"}]
+
+MOCK_REQUESTS = [{"_id": "1",
+                  "table_number": "1",
+                  "table_id": "1",
+                  "time": datetime.datetime.now()}]
 
 class MockDBHelper(object):
 
@@ -21,13 +28,18 @@ class MockDBHelper(object):
                              'hashed': hashed}
 
     def add_table(self, number, owner):
-        MOCK_TABLES.append({"_id": number,
+        MOCK_TABLES.append({"_id": str(number),
                             "number": number,
                             "owner": owner})
         return number
     
     def get_tables(self, owner_id):
         return MOCK_TABLES
+
+    def get_table(self, table_id):
+        for table in MOCK_TABLES:
+            if table.get("_id") == table_id:
+                return table
 
     def update_table(self, _id, url):
         for table in MOCK_TABLES:
@@ -37,6 +49,24 @@ class MockDBHelper(object):
 
     def delete_table(self, table_id):
         for i, table in enumerate(MOCK_TABLES):
-            if table['_id'] == table_id:
+            if table['id'] == table_id:
                 del MOCK_TABLES[i]
+                break
+
+    def add_request(self, table_id, time):
+        table = self.get_table(table_id)
+        MOCK_REQUESTS.append({"_id": table_id, 
+                              "owner": table["owner"],
+                              "table_number": table["number"],
+                              "table_id": table_id,
+                              "time": time})
+        return True
+
+    def get_requests(self, owner_id):
+        return MOCK_REQUESTS
+
+    def delete_request(self, request_id):
+        for idx, request in enumerate(MOCK_REQUESTS):
+            if request['_id'] == request_id:
+                del MOCK_REQUESTS[idx]
                 break
